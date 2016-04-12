@@ -1,0 +1,592 @@
+
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.swing.border.Border;
+import javax.swing.border.MatteBorder;
+
+public class RobotFrame extends JFrame implements ActionListener, MouseListener {
+	private JButton boutonNettoyer, boutonPolluer, boutonReinitialiser, boutonQuitter;
+	private JMenuBar menubarRobot;
+	private JMenu menuJouer, menuAide, miAjouteRobotNett, miAjouteRobotPoll;
+	private JMenuItem miNouveauMonde, miQuitter;
+	private JMenuItem miAjouteRobotNett1, miAjouteRobotNett2, miAjouteRobotNett3;
+	private JMenuItem miAjouteRobotPoll1, miAjouteRobotPoll2, miAjouteRobotPoll3;
+	//private List<JButton> listeBoutonRN = new ArrayList<JButton>();
+	/*private JButton boutonRN1, boutonRN2, boutonRN3;
+	//private List<JButton> listeBoutonPN = new ArrayList<JButton>();
+	private JButton boutonRP1, boutonRP2, boutonRP3;
+	private JLabel labels[] = new JLabel[6];*/
+	private JPanel panelMonde, panelNavNet, panelNavPol;
+	private JPanel[][] panelCase;
+	
+	Graphics2D g2d;
+	Timer timer;
+	int indexRobot=0;
+	private boolean active=true;
+	
+	private Monde monde;
+	private List<Robot> listeRobot = new ArrayList<Robot>();
+	//private Robot robotNet1, robotNet2, robotNet3, robotPol1, robotPol2, robotPol3;
+    
+	public RobotFrame() {
+		initUI();
+		}
+	
+	public final void initUI() {
+		//mainFrame = new JFrame();
+		setTitle("Robot");
+		setLayout(new BorderLayout());
+		setSize (750, 600) ;		
+		
+		initMenuUI();
+	 
+		panelMonde = new JPanel(new GridLayout(10,10));
+		panelCase = new JPanel[10][10];
+		for(int i=0; i< 10; i++) {
+			for(int j=0; j<10; j++) {
+				panelCase[i][j] = new JPanel();
+				panelCase[i][j].setBackground(Color.GRAY);
+				panelCase[i][j].setBorder(BorderFactory.createLineBorder(Color.black));
+				panelCase[i][j].addMouseListener(this);
+				panelMonde.add(panelCase[i][j]);
+			}
+		}
+		add(panelMonde, BorderLayout.CENTER);
+	 
+		panelNavNet = new JPanel(new BorderLayout());
+		panelNavNet.setLayout(new BoxLayout(panelNavNet, BoxLayout.Y_AXIS));
+		panelNavPol = new JPanel(new BorderLayout());
+		panelNavPol.setLayout(new BoxLayout(panelNavPol, BoxLayout.Y_AXIS));
+		
+		JLabel labelNavNet = new JLabel("  Robot Nettoyer  ");
+		panelNavNet.add(labelNavNet);
+		JLabel labelNavPol = new JLabel("  Robot Polluer  ");
+		panelNavPol.add(labelNavPol);
+		
+		add(panelNavNet, BorderLayout.WEST);
+		add(panelNavPol, BorderLayout.EAST);
+		
+		//pack();
+		setResizable(false);
+		setLocationRelativeTo(null);
+		setDefaultCloseOperation(EXIT_ON_CLOSE);
+		
+    }	
+	
+	public void initMenuUI() {
+		menubarRobot = new JMenuBar();
+		menuJouer = new JMenu("Jouer");
+		menuAide = new JMenu("Aide");
+		
+		miNouveauMonde = new JMenuItem("Nouveau Monde");
+		miAjouteRobotNett = new JMenu("Robot Nettoyeur");
+		miAjouteRobotPoll = new JMenu("Robot Polluer");
+		miAjouteRobotNett1 = new JMenuItem("Nettoyeur 1");
+		miAjouteRobotNett2 = new JMenuItem("Nettoyeur 2");
+		miAjouteRobotNett3 = new JMenuItem("Nettoyeur 3");
+		miAjouteRobotPoll1 = new JMenuItem("Polluer 1");
+		miAjouteRobotPoll2 = new JMenuItem("Polluer 2");
+		miAjouteRobotPoll3 = new JMenuItem("Polluer 3");
+		miQuitter = new JMenuItem("Quitter");
+		
+
+		miNouveauMonde.addActionListener(this);
+		miAjouteRobotNett1.addActionListener(this);
+		miAjouteRobotNett2.addActionListener(this);
+		miAjouteRobotNett3.addActionListener(this);
+		miAjouteRobotPoll1.addActionListener(this);
+		miAjouteRobotPoll2.addActionListener(this);
+		miAjouteRobotPoll3.addActionListener(this);
+		miQuitter.addActionListener(this);
+		
+		miAjouteRobotNett.add(miAjouteRobotNett1);
+		miAjouteRobotNett.add(miAjouteRobotNett2);
+		miAjouteRobotNett.add(miAjouteRobotNett3);
+		miAjouteRobotPoll.add(miAjouteRobotPoll1);
+		miAjouteRobotPoll.add(miAjouteRobotPoll2);
+		miAjouteRobotPoll.add(miAjouteRobotPoll3);
+		miAjouteRobotNett.setEnabled(false);
+		miAjouteRobotPoll.setEnabled(false);
+
+		menuJouer.add(miNouveauMonde);
+		menuJouer.addSeparator();
+		menuJouer.add(miAjouteRobotNett);
+		menuJouer.add(miAjouteRobotPoll);
+		menuJouer.addSeparator();
+		menuJouer.add(miQuitter);
+		
+		menubarRobot.add(menuJouer);
+		menubarRobot.add(menuAide);
+		
+		setJMenuBar(menubarRobot);
+	}
+	
+
+    public void initMonde() {
+		//panelMonde = new JPanel(new GridLayout(10,10));
+		//panelCase = new JPanel[10][10];    	
+    	monde = new Monde();
+    	for(int i=0; i< 10; i++) {
+			for(int j=0; j<10; j++) {
+				//panelCase[i][j] = new JPanel();
+				try {
+					if (monde.getMatVal(i, j)) {
+						panelCase[i][j].setBackground(Color.RED);	
+						}
+					else {
+						panelCase[i][j].setBackground(Color.CYAN);	
+						}
+						
+					panelCase[i][j].setBorder(BorderFactory.createLineBorder(Color.black));
+					panelMonde.add(panelCase[i][j]);
+					
+				} catch (ErrDimension e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+		}
+		//updatePanels();
+		
+	}public void updateMonde() {
+		for(int i=0; i< 10; i++) {
+			for(int j=0; j<10; j++) {
+				try {
+					if (monde.getMatVal(i, j)) {
+						panelCase[i][j].setBackground(Color.RED);	
+						}
+					else {
+						panelCase[i][j].setBackground(Color.CYAN);	
+						}
+						
+					panelCase[i][j].setBorder(BorderFactory.createLineBorder(Color.black));
+					//panelMonde.add(panelCase[i][j]);
+					
+				} catch (ErrDimension e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+		}
+		for(Robot robot : listeRobot) {
+			if(robot.getIsSelected()){
+				panelCase[robot.getPosX()][robot.getPosY()].setBackground(Color.ORANGE);
+				System.out.println("panel case robot ");
+			}
+		}
+		/*
+		if(robotNet1!=null && robotNet1.getIsSelected()){
+			panelCase[robotNet1.getPosX()][robotNet1.getPosY()].setBackground(Color.ORANGE);
+			System.out.println("panel case robot net1");
+		}
+		if(robotPol1!=null && robotPol1.getIsSelected()){
+			panelCase[robotPol1.getPosX()][robotPol1.getPosY()].setBackground(Color.ORANGE);
+			System.out.println("panel case robot pol1");
+		}
+		*/
+		updatePanels();
+	}
+	
+	public void updatePanels() {
+		panelMonde.revalidate();
+		panelMonde.repaint();
+		panelNavNet.revalidate();
+		panelNavNet.repaint();
+		panelNavPol.revalidate();
+		panelNavPol.repaint();
+	}
+	
+	public void createRobot(int type, String image) {
+		Robot robot;
+		JButton bouton;
+		JLabel label;
+		switch (type){
+			case 1:
+				robot = new RobotNettoyeur(monde);
+				listeRobot.add(robot);
+				//robotNet1 = robot;
+				bouton = new JButton ("Mario") ;
+				//boutonRN1 = bouton;
+				label = new JLabel();
+				//labels[1] = label;
+				break;
+			case 4:
+				robot = new RobotpolluerToutDroit(monde);
+				listeRobot.add(robot);
+				//robotPol1 = robot;
+				bouton = new JButton ("Mushroom") ;
+				//boutonRP1 = bouton;
+				label = new JLabel();
+				//labels[4] = label;
+				break;
+/*			case 2:
+				robotPol1 = new RobotpolluerToutDroit(monde);
+				break;
+			case 3:
+				robotPol1 = new RobotpolluerToutDroit(monde);
+				break;
+			case 5:
+				robotPol1 = new RobotpolluerToutDroit(monde);
+				break;
+			case 6:
+				robotPol1 = new RobotpolluerToutDroit(monde);
+				break;*/
+			default:
+				robot = null;
+				bouton = null;
+				label = null;
+				break;
+		}
+		int i = robot.getPosX();
+		int j = robot.getPosY();
+		robot.setImageIcon(new ImageIcon("img/"+image+".png"));
+		robot.setImage(robot.getImageIcon().getImage());
+		robot.setCoorX(panelCase[i][j].getX());
+		robot.setCoorY(panelCase[i][j].getY());
+		robot.setButtonParcourir(bouton); //
+		robot.setLabelImage(label); //
+		robot.setType(type);
+		//label.setVisible(false);
+		label.setIcon(robot.getImageIcon());
+		panelCase[i][j].add(label);
+		System.out.println("i: "+i+" j: "+j);
+		System.out.println("XRN: "+robot.getCoorX()+" YRN: "+robot.getCoorY());
+		System.out.println("XPC: "+panelCase[i][j].getX()+" YPC: "+panelCase[i][j].getY());
+		bouton.addActionListener(this);
+		if(type>3)
+			panelNavPol.add(bouton);
+		else
+			panelNavNet.add(bouton);
+		label.addMouseListener(this);
+		repaint();
+		updatePanels();
+	}
+	
+	public void parcourirRobot(Robot robot){
+		System.out.println("start Robot Parcourir!");
+		robot.setIsSelected(false);
+		if(robot.getIsAction()){
+			robot.parcourir();
+			//robot.setMat();
+		}
+		else
+			robot.deplacerVers();
+		robot.setIndexChemin(0);
+		robot.setIsMoving(true);
+		//labels[robot.getType()].setVisible(false);
+		robot.getLabelImage().setVisible(false);
+		
+		timer = new Timer(60, paintTimerRobot);
+		timer.start();
+		System.out.println("Stop moving!");
+	}
+	
+	public void paint(Graphics g) {
+		super.paint(g);
+		g2d = (Graphics2D) g;
+		for(Robot robot : listeRobot) {
+			if(robot!=null&& robot.getIsMoving()) {
+				g2d.drawImage(robot.getImage(), 
+					robot.getCoorX()+panelMonde.getX(), 
+					robot.getCoorY()+panelMonde.getY()+robot.getImageIcon().getIconHeight(), 
+					panelMonde); //Draws the ball Image at the correct X and Y co-ordinates.									
+			System.out.println("repaint RN1 RY: "+robot.getCoorY());
+			}
+		}
+	/*	if(robotNet1!=null&& robotNet1.getIsMoving()) {
+			g2d.drawImage(robotNet1.getImage(), 
+				robotNet1.getCoorX()+panelMonde.getX(), 
+				robotNet1.getCoorY()+panelMonde.getY()+robotNet1.getImageIcon().getIconHeight(), 
+				panelMonde); //Draws the ball Image at the correct X and Y co-ordinates.									
+		System.out.println("repaint RN1 RY: "+robotNet1.getCoorY());
+		}
+		if(robotPol1!=null&& robotPol1.getIsMoving()) {
+			g2d.drawImage(robotPol1.getImage(), 
+					robotPol1.getCoorX()+panelMonde.getX(), 
+					robotPol1.getCoorY()+panelMonde.getY()+robotPol1.getImageIcon().getIconHeight(), 
+					panelMonde); //Draws the ball Image at the correct X and Y co-ordinates.
+			
+			System.out.println("repaint RP1 RY: "+robotPol1.getCoorY());
+		}*/
+		Toolkit.getDefaultToolkit().sync(); // necessary for linux users to draw  and animate image correctly
+		g.dispose();
+	}
+
+	Action paintTimerRobot = new AbstractAction() { // functionality of our timer:
+		public void actionPerformed(ActionEvent e) {
+			for(Robot robot : listeRobot) {
+				if(robot!=null && robot.getIsMoving()) {
+					robotDeplacer(robot);
+				}
+			}
+		/*	if(robotNet1!=null && robotNet1.getIsMoving()) {
+				robotDeplacer(robotNet1);
+			}	
+			if(robotPol1!=null && robotPol1.getIsMoving()) {
+				robotDeplacer(robotPol1);
+			}*/	
+		}
+	};
+	
+	public void robotDeplacer(Robot robot) {
+		updateMonde();
+		active=false;
+		if(robot.getIsAction()) robot.setMat();
+		if(robot.getChemin().size()>1) {
+			Chemin c1 = robot.getChemin().get(robot.getIndexChemin());
+			Chemin c2 = robot.getChemin().get(robot.getIndexChemin()+1);
+			
+			robot.setCoorX2(panelCase[c2.getI()][c2.getJ()].getX());
+			robot.setCoorY2(panelCase[c2.getI()][c2.getJ()].getY());
+			
+			if(Math.abs(robot.getCoorX() - robot.getCoorX2()) > 5 || 
+					Math.abs(robot.getCoorY() - robot.getCoorY2()) > 5 ){
+				System.out.println("repaint x1 : "+robot.getCoorX()+" y1 : "+robot.getCoorY());
+				if(Math.abs(robot.getCoorX() - robot.getCoorX2()) > 5)
+					robot.setCoorX(robot.getCoorX() + (panelCase[c2.getI()][c2.getJ()].getX() - panelCase[c1.getI()][c1.getJ()].getX())/5);
+				if(Math.abs(robot.getCoorY() - robot.getCoorY2()) > 5)
+					robot.setCoorY(robot.getCoorY() + (panelCase[c2.getI()][c2.getJ()].getY() - panelCase[c1.getI()][c1.getJ()].getY())/5);
+				repaint();
+
+			}
+			else {
+				System.out.println("Type: "+robot.getType());
+				panelCase[c1.getI()][c1.getJ()].remove(/*labels[robot.getType()]*/robot.getLabelImage());
+				panelCase[c2.getI()][c2.getJ()].add(/*labels[robot.getType()]*/robot.getLabelImage());
+				//labels[robot.getType()].setVisible(false);
+				robot.getLabelImage().setVisible(false);
+
+				robot.setCoorX(robot.getCoorX2());
+				robot.setCoorY(robot.getCoorY2());
+				try {
+					robot.changerPosition(c2.getI(), c2.getJ());
+					if(robot.getIsAction())
+						robot.setMat();
+				} catch (ErrDimension e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+				repaint();
+				//updateMonde();
+				robot.setIndexChemin(robot.getIndexChemin()+1);
+				System.out.println("arrive");
+			}
+		}
+		if(robot.getIndexChemin() == robot.getChemin().size()-1) {
+			//labels[robot.getType()].setVisible(true);
+			robot.getLabelImage().setVisible(true);
+			robot.setIsMoving(false);
+			robot.setIsAction(false);
+			//repaint();
+			indexRobot=0;
+			updateMonde();
+			active=true;
+			timer.stop();
+		}
+	}
+	
+	public static void main(String[] args) {
+		// TODO Auto-generated method stub
+		RobotFrame ex = new RobotFrame();
+		ex.setVisible(true);
+	}
+
+	public void actionPerformed(ActionEvent e){
+		if(active) {
+			if (e.getSource() == boutonNettoyer )
+				System.out.println("Nettoyer!");
+			if (e.getSource() == boutonPolluer )
+				System.out.println("Polluer!");
+			if (e.getSource() == boutonReinitialiser )
+				System.out.println("Réinitialiser!");
+			if (e.getSource() == boutonQuitter )
+				System.out.println("Quitter!");
+			if (e.getSource() == miNouveauMonde ) {
+				//monde = new Monde();
+				initMonde();
+				miAjouteRobotNett.setEnabled(true);
+				miAjouteRobotPoll.setEnabled(true);
+				panelMonde.setDoubleBuffered(true);
+				System.out.println("Nouveau Monde!");
+			}
+			if (e.getSource() == miAjouteRobotNett1 ) {
+				createRobot(1,"mario1");
+				System.out.println("Ajoute Robot Nett 1!");
+			}
+			if (e.getSource() == miAjouteRobotPoll1 ) {
+				createRobot(4,"mushroom");
+				System.out.println("Ajoute Robot Poll 1!");
+			}
+			for(Robot robot : listeRobot){
+				if (e.getSource() == robot.getButtonParcourir() ) {
+					robot.setIsAction(true);
+					parcourirRobot(robot);
+					System.out.println("Parcourir Robot liste!");
+				}							
+			}
+			
+			/*
+			if (e.getSource() == boutonRN1 ) {
+				robotNet1.setIsAction(true);
+				parcourirRobot(robotNet1);
+				System.out.println("Parcourir Robot Nett 1!");
+			}			
+			
+			if (e.getSource() == boutonRP1 ) {
+				robotPol1.setIsAction(true);
+				parcourirRobot(robotPol1);
+				System.out.println("Parcourir Robot Poll 1!");
+			}*/
+		}
+	}
+	
+    public void mouseClicked(MouseEvent me) {
+		if(active) {
+			for(Robot robot : listeRobot) {
+				if (robot!=null) robot.setIsSelected(false);
+				
+				if (me.getSource() == robot.getLabelImage() ) {
+					System.out.println("Image Icon Label !");
+					System.out.println("Position i: "+ robot.getPosX() +" j: "+robot.getPosY());
+					//panelCase[robotNet1.getPosX()][robotNet1.getPosY()].setBackground(Color.ORANGE);	
+					if(indexRobot!=robot.numero) {
+						indexRobot=robot.numero;
+						robot.setIsSelected(true);
+						//robotPol1.setIsSelected(false);
+						//panelCase[robotNet1.getPosX()][robotNet1.getPosY()].setBackground(Color.ORANGE);	
+					}
+					else {
+						indexRobot=0;
+						robot.setIsSelected(false);
+						//updateMonde();	
+					}
+					updateMonde();
+				}
+		    	
+			}
+			
+			for(int i=0; i< 10; i++) {
+				for(int j=0; j<10; j++) {
+					if (me.getSource() == panelCase[i][j] ) {
+						System.out.println("Panel Case clicked, i: "+i+" j: "+j);
+						if(indexRobot>0){
+							Robot robot = listeRobot.get(indexRobot-1);
+							robot.setPosX2(i);
+							robot.setPosY2(j);
+							robot.setIsAction(false);
+							//robotNet1.setIsSelected(false);
+							parcourirRobot(robot);
+						}
+					}
+				}
+			}
+/*			if (robotNet1!=null) robotNet1.setIsSelected(false);
+	    	if (robotPol1!=null) robotPol1.setIsSelected(false);
+	
+	    	if (me.getSource() == labels[1] ) {
+				System.out.println("Image Icon Label RN1!");
+				System.out.println("Position i: "+ robotNet1.getPosX() +" j: "+robotNet1.getPosY());
+				//panelCase[robotNet1.getPosX()][robotNet1.getPosY()].setBackground(Color.ORANGE);	
+				if(indexRobot!=1) {
+					indexRobot=1;
+					robotNet1.setIsSelected(true);
+					//robotPol1.setIsSelected(false);
+					//panelCase[robotNet1.getPosX()][robotNet1.getPosY()].setBackground(Color.ORANGE);	
+				}
+				else {
+					indexRobot=0;
+					robotNet1.setIsSelected(false);
+					//updateMonde();	
+				}
+				updateMonde();
+			}
+	    	if (me.getSource() == labels[4] ) {
+				System.out.println("Image Icon Label RP1!");
+				System.out.println("Position i: "+ robotPol1.getPosX() +" j: "+robotPol1.getPosY());
+				if(indexRobot!=4) {
+					System.out.println("number 4 is selected!");
+					indexRobot=4;
+					robotPol1.setIsSelected(true);
+					//robotNet1.setIsSelected(false);
+					//panelCase[robotPol1.getPosX()][robotPol1.getPosY()].setBackground(Color.ORANGE);	
+				}
+				else {
+					robotPol1.setIsSelected(false);
+					indexRobot=0;
+					//updateMonde();	
+				}
+				updateMonde();
+			}
+	    	
+	    	for(int i=0; i< 10; i++) {
+				for(int j=0; j<10; j++) {
+					if (me.getSource() == panelCase[i][j] ) {
+						System.out.println("Panel Case clicked, i: "+i+" j: "+j);
+						if(indexRobot>0){
+							switch (indexRobot){
+							case 1:
+								robotNet1.setPosX2(i);
+								robotNet1.setPosY2(j);
+								robotNet1.setIsAction(false);
+								//robotNet1.setIsSelected(false);
+								parcourirRobot(robotNet1);
+								break;
+							case 4:
+								robotPol1.setPosX2(i);
+								robotPol1.setPosY2(j);
+								robotPol1.setIsAction(false);
+								//robotPol1.setIsSelected(false);
+								parcourirRobot(robotPol1);
+								break;
+							case 2:
+								robotPol1 = new RobotpolluerToutDroit(monde);
+								break;
+							case 3:
+								robotPol1 = new RobotpolluerToutDroit(monde);
+								break;
+							case 5:
+								robotPol1 = new RobotpolluerToutDroit(monde);
+								break;
+							case 6:
+								robotPol1 = new RobotpolluerToutDroit(monde);
+								break;
+							default:
+								break;
+						}
+						}
+					}
+				}
+			}*/
+		}
+    }
+    
+	
+	@Override
+	public void mousePressed(MouseEvent e) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void mouseReleased(MouseEvent e) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void mouseEntered(MouseEvent e) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void mouseExited(MouseEvent e) {
+		// TODO Auto-generated method stub
+		
+	}
+
+}
